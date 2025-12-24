@@ -1,0 +1,6 @@
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/Mikkel/Scaler2x/Scaler2x.srcs/sources_1/new/Scaler2x.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module Scaler2x_stream
+INFO: [VRFC 10-311] analyzing module Scaler2x_frame
+INFO: [VRFC 10-311] analyzing module Scaler2x
+INFO: [VRFC 10-2263] Analyzing Verilog file "C:/Users/Mikkel/Scaler2x/Scaler2x.srcs/sim_1/new/tb_scaler_2x_continuous.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module tb_Scaler2x
