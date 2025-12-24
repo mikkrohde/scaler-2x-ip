@@ -16,6 +16,7 @@
 # Vivado Build Directories (IGNORE - can be regenerated)
 # ==============================================================================
 *.cache/
+*.cache
 *.hw/
 *.ip_user_files/
 *.sim/
