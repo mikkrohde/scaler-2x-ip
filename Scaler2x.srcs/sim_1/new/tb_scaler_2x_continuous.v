@@ -37,6 +37,7 @@ module tb_Scaler2x;
     reg [15:0]  VPU_cfg_height;
 
     reg                     VPU_in_valid;
+    wire                    VPU_in_ready;
     reg [PIXEL_WIDTH-1:0]   VPU_in_pixel;
     reg                     VPU_in_line_start;
     reg                     VPU_in_frame_start;
@@ -46,6 +47,7 @@ module tb_Scaler2x;
     wire [PIXEL_WIDTH-1:0]                  VPU_rd_data;
 
     wire                    VPU_out_valid;
+    reg                     VPU_out_ready;
     wire [PIXEL_WIDTH-1:0]  VPU_out_pixel;
     wire                    VPU_out_line_start;
     wire                    VPU_out_frame_start;
@@ -65,6 +67,7 @@ module tb_Scaler2x;
         .VPU_cfg_width     (VPU_cfg_width),
         .VPU_cfg_height    (VPU_cfg_height),
         .VPU_in_valid      (VPU_in_valid),
+        .VPU_in_ready      (VPU_in_ready),
         .VPU_in_pixel      (VPU_in_pixel),
         .VPU_in_line_start (VPU_in_line_start),
         .VPU_in_frame_start(VPU_in_frame_start),
@@ -72,6 +75,7 @@ module tb_Scaler2x;
         .VPU_rd_addr       (VPU_rd_addr),
         .VPU_rd_data       (VPU_rd_data),
         .VPU_out_valid     (VPU_out_valid),
+        .VPU_out_ready     (VPU_out_ready),
         .VPU_out_pixel     (VPU_out_pixel),
         .VPU_out_line_start(VPU_out_line_start),
         .VPU_out_frame_start(VPU_out_frame_start)
@@ -87,25 +91,21 @@ module tb_Scaler2x;
     // Task: drive one 6-pixel line
     task drive_line(input integer row);
     begin
-        // First pixel in line
-        VPU_in_line_start  = 1'b1;
-        VPU_in_frame_start = (row == 0) ? 1'b1 : 1'b0;
-        VPU_in_valid       = 1'b1;
-        VPU_in_pixel       = {row[7:0], 8'd0, 8'h00};
-        @(posedge clk);
-    
-        VPU_in_line_start  = 1'b0;
-        VPU_in_frame_start = 1'b0;
-    
-        // Remaining pixels in the line
-        for (x = 1; x < IN_W; x = x + 1) begin
-            VPU_in_valid <= 1'b1;
-            VPU_in_pixel <= {row[7:0], x[7:0], 8'h00};
+        for (x = 0; x < IN_W; x = x + 1) begin
+            VPU_in_valid       <= 1'b1;
+            VPU_in_pixel       <= {row[7:0], x[7:0], 8'h00};
+            VPU_in_line_start  <= (x == 0);
+            VPU_in_frame_start <= (row == 0 && x == 0);
+            
+            // Wait for the handshake to complete (clock edge where both valid and ready are high)
             @(posedge clk);
+            while (!VPU_in_ready) @(posedge clk);
         end
-    
-        // End of line: deassert valid AFTER last pixel
-        VPU_in_valid <= 1'b0;
+        
+        // Deassert valid after the line is complete
+        VPU_in_valid       <= 1'b0;
+        VPU_in_line_start  <= 1'b0;
+        VPU_in_frame_start <= 1'b0;
         @(posedge clk);
     end
     endtask
@@ -135,6 +135,7 @@ module tb_Scaler2x;
         VPU_in_pixel       = 0;
         VPU_in_line_start  = 0;
         VPU_in_frame_start = 0;
+        VPU_out_ready      = 1;
 
         rst_n = 0;
         repeat (5) @(posedge clk);
@@ -145,7 +146,7 @@ module tb_Scaler2x;
 
         // Drive 4 lines
         for (y = 0; y < IN_H; y = y + 1) begin
-            $display("--- Driving line %0d ---", y);
+            //$display("--- Driving line %0d ---", y);
             drive_line(y);
             repeat (2) @(posedge clk);
         end

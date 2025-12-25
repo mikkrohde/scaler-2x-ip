@@ -7,12 +7,9 @@
 // Project Name: 2x stream scaler
 // Target Devices: 
 // Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
+// Description: 2x upscaler for video signals using hsync-based streamed upscaling and vsync-based frame-by-frame upscaling
 // 
 // Revision 1.0 - File Created
-// Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
@@ -23,75 +20,75 @@ module Scaler2x_stream #(
     input  wire                   rst_n,
     // Input line stream
     input  wire                   VPU_in_valid,
+    output wire                   VPU_in_ready,
     input  wire [PIXEL_WIDTH-1:0] VPU_in_pixel,
     input  wire                   VPU_in_line_start,
     input  wire                   VPU_in_frame_start,
     // Output 2x scaled stream
-    output reg                    VPU_out_valid,
-    output reg  [PIXEL_WIDTH-1:0] VPU_out_pixel,
-    output reg                    VPU_out_line_start,
-    output reg                    VPU_out_frame_start
+    output reg                      VPU_out_valid,
+    input  wire                     VPU_out_ready,
+    output reg [PIXEL_WIDTH-1:0]    VPU_out_pixel,
+    output reg                      VPU_out_line_start,
+    output reg                      VPU_out_frame_start
 );
-
+    
     // Horizontal repeat flag: 0 = first copy, 1 = second copy of same input pixel
-    reg h_rep;
-
-    // Vertical repeat flag: 0 = first output line for this input line,
-    //                       1 = second output line for this input line
-    reg v_rep;
-
+    // Vertical repeat flag: 0 = first output line for this input line, 1 = second output line for this input line
     // Latches to remember frame/line start for the second vertical pass
+    reg horizontal_repitition;
+    reg vertical_repitition;
     reg [PIXEL_WIDTH-1:0] latched_pixel;
     reg latched_frame_start;
     reg latched_line_start;
 
+    //Handshake signals
+    wire handshake_in  = VPU_in_valid && VPU_in_ready;
+    wire handshake_out = VPU_out_valid && VPU_out_ready;
+    
+    assign VPU_in_ready = (!VPU_out_valid || handshake_out) && !horizontal_repitition;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            h_rep               <= 1'b0;
-            v_rep               <= 1'b0;
-            VPU_out_valid       <= 1'b0;
-            VPU_out_pixel       <= {PIXEL_WIDTH{1'b0}};
-            VPU_out_line_start  <= 1'b0;
-            VPU_out_frame_start <= 1'b0;
-            latched_pixel       <= {PIXEL_WIDTH{1'b0}};
-            latched_line_start  <= 1'b0;
-            latched_frame_start <= 1'b0;
+            horizontal_repitition   <= 1'b0;
+            vertical_repitition     <= 1'b0;
+            VPU_out_valid           <= 1'b0;
+            VPU_out_pixel           <= {PIXEL_WIDTH{1'b0}};
+            VPU_out_line_start      <= 1'b0;
+            VPU_out_frame_start     <= 1'b0;
+            latched_pixel           <= {PIXEL_WIDTH{1'b0}};
+            latched_line_start      <= 1'b0;
+            latched_frame_start     <= 1'b0;
         end else begin
-            // Default outputs
-            VPU_out_valid       <= 1'b0;
-            VPU_out_line_start  <= 1'b0;
-            VPU_out_frame_start <= 1'b0;
+            //if (handshake_out) begin
+            //    VPU_out_valid <= 1'b0;
+            //end
+            //VPU_out_line_start  <= 1'b0;
+            //VPU_out_frame_start <= 1'b0;
 
-            if (VPU_in_valid) begin
-                // Horizontal 2x: output each input pixel twice
-                VPU_out_valid  <= 1'b1;
-                VPU_out_pixel  <= VPU_in_pixel;
-    
-                // Propagate frame/line start on first copy
-                if (h_rep) begin
+            if (!VPU_out_valid || handshake_out) begin
+                if (horizontal_repitition) begin
                     // Second horizontal copy of same pixel
+                    VPU_out_valid           <= 1'b1;
+                    VPU_out_pixel           <= latched_pixel;
+                    VPU_out_line_start      <= 1'b0;
+                    VPU_out_frame_start     <= 1'b0;
+                    horizontal_repitition   <= 1'b0;
+                    
+                end else if(handshake_in) begin
                     VPU_out_valid       <= 1'b1;
-                    VPU_out_pixel       <= latched_pixel;
-                    VPU_out_line_start  <= 1'b0;  // Start signals only on first copy
-                    VPU_out_frame_start <= 1'b0;
-                    h_rep               <= 1'b0;
-                end else if(VPU_in_valid) begin
-                    latched_pixel <= VPU_in_pixel;
-                    latched_line_start <= VPU_in_line_start;
+                    latched_pixel       <= VPU_in_pixel;
+                    latched_line_start  <= VPU_in_line_start;
                     latched_frame_start <= VPU_in_frame_start;
                     
-                    VPU_out_valid       <= 1'b1;
                     VPU_out_pixel       <= VPU_in_pixel;
-                    VPU_out_line_start  <= VPU_in_line_start;  // Start signals only on first copy
+                    VPU_out_line_start  <= VPU_in_line_start;
                     VPU_out_frame_start <= VPU_in_frame_start;
-                     
-                    h_rep <= 1'b1;
+                    
+                    horizontal_repitition   <= 1'b1;
+                end else begin
+                    VPU_out_valid <= 1'b0; // No input available
                 end
             end
-            // Note: true vertical 2x requires either a second pass of the same
-            // line (upstream sends it twice) or a line buffer feeding this module.
-            // Here we just keep v_rep/pending_* as placeholders for when you
-            // integrate with VideoBuffer and add a second-feed path.
         end
     end
 
@@ -129,8 +126,8 @@ endmodule
 
 
 module Scaler2x #(
-    parameter MAX_WIDTH   = 1024,
-    parameter MAX_HEIGHT  = 960,
+    parameter MAX_WIDTH   = 1920,
+    parameter MAX_HEIGHT  = 1080,
     parameter PIXEL_WIDTH = 24
 )(
     input wire  clk,
@@ -144,10 +141,11 @@ module Scaler2x #(
     input wire [15:0]            VPU_cfg_height,
 
     // Stream input (from sampler / line buffer)
-    input wire                   VPU_in_valid,
-    input wire [PIXEL_WIDTH-1:0] VPU_in_pixel,
-    input wire                   VPU_in_line_start,
-    input wire                   VPU_in_frame_start,
+    input wire                      VPU_in_valid,
+    output wire                     VPU_in_ready,
+    input wire [PIXEL_WIDTH-1:0]    VPU_in_pixel,
+    input wire                      VPU_in_line_start,
+    input wire                      VPU_in_frame_start,
 
     // VideoBuffer read side (used only in frame mode)
     output wire                                     VPU_rd_en,
@@ -156,6 +154,7 @@ module Scaler2x #(
 
     // Unified 2x output stream
     output wire                   VPU_out_valid,
+    input  wire                   VPU_out_ready,
     output wire [PIXEL_WIDTH-1:0] VPU_out_pixel,
     output wire                   VPU_out_line_start,
     output wire                   VPU_out_frame_start
@@ -170,15 +169,17 @@ module Scaler2x #(
     Scaler2x_stream #(
         .PIXEL_WIDTH(PIXEL_WIDTH)
     ) u_scaler_stream (
-        .clk               (clk),
-        .rst_n             (rst_n),
-        .VPU_in_valid      (VPU_in_valid),
-        .VPU_in_pixel      (VPU_in_pixel),
-        .VPU_in_line_start (VPU_in_line_start),
-        .VPU_in_frame_start(VPU_in_frame_start),
-        .VPU_out_valid     (s_out_valid),
-        .VPU_out_pixel     (s_out_pixel),
-        .VPU_out_line_start(s_out_line_start),
+        .clk                (clk),
+        .rst_n              (rst_n),
+        .VPU_in_valid       (VPU_in_valid),
+        .VPU_in_ready       (VPU_in_ready),
+        .VPU_in_pixel       (VPU_in_pixel),
+        .VPU_in_line_start  (VPU_in_line_start),
+        .VPU_in_frame_start (VPU_in_frame_start),
+        .VPU_out_valid      (s_out_valid),
+        .VPU_out_ready      (VPU_out_ready),
+        .VPU_out_pixel      (s_out_pixel),
+        .VPU_out_line_start (s_out_line_start),
         .VPU_out_frame_start(s_out_frame_start)
     );
 
