@@ -8,7 +8,7 @@ module tb_Scaler2x;
     localparam PIXEL_WIDTH = 24;
     localparam MAX_WIDTH   = 1024;
     localparam MAX_HEIGHT  = 960;
-
+    
     // Clock / reset
     reg clk = 0;
     reg rst_n = 0;
@@ -37,7 +37,7 @@ module tb_Scaler2x;
 
     // Dummy VideoBuffer read data (unused in stream mode)
     assign VPU_rd_data = {PIXEL_WIDTH{1'b0}};
-
+    
     // Instantiate DUT
     Scaler2x #(
         .MAX_WIDTH  (MAX_WIDTH),

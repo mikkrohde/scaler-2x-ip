@@ -96,6 +96,7 @@ module Scaler2x #(
             .VPU_rd_addr       (f_rd_addr),
             .VPU_rd_data       (VPU_rd_data),
             .VPU_out_valid     (f_out_valid),
+            .VPU_out_ready     (VPU_out_ready), 
             .VPU_out_pixel     (f_out_pixel),
             .VPU_out_line_start(f_out_line_start),
             .VPU_out_frame_start(f_out_frame_start)
