@@ -2,3 +2,6 @@ Running: xsim.dir/tb_Scaler2x_behav/xsimk.exe -simmode gui -wdb tb_Scaler2x_beha
 Design successfully loaded
 Design Loading Memory Usage: 9816 KB (Peak: 9816 KB)
 Design Loading CPU Usage: 15 ms
+Simulation completed
+Simulation Memory Usage: 10604 KB (Peak: 10604 KB)
+Simulation CPU Usage: 46 ms
