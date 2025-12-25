@@ -201,3 +201,4 @@ venv/
 !LICENSE
 !*.pdf
 !docs/**/*
+Scaler2x.sim/sim_1/behav/xsim/xelab.pb
