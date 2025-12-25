@@ -1,7 +1,4 @@
-Running: xsim.dir/tb_Scaler2x_behav/xsimk.exe -simmode gui -wdb tb_Scaler2x_behav.wdb -simrunnum 0 -socket 64504
+Running: xsim.dir/tb_Scaler2x_behav/xsimk.exe -simmode gui -wdb tb_Scaler2x_behav.wdb -simrunnum 0 -socket 56306
 Design successfully loaded
-Design Loading Memory Usage: 9856 KB (Peak: 9856 KB)
+Design Loading Memory Usage: 9816 KB (Peak: 9816 KB)
 Design Loading CPU Usage: 15 ms
-Simulation completed
-Simulation Memory Usage: 10576 KB (Peak: 10576 KB)
-Simulation CPU Usage: 280 ms
