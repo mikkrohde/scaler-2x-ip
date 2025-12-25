@@ -1,0 +1,47 @@
+Time resolution is 1 ps
+========================================
+2x Scaler Testbench - Horizontal + Vertical
+========================================
+
+=== Driving 6x4 test frame into Scaler2x ===
+
+>>> Sending input line 0
+Line 0 (frame_start=1):
+ 00:00 00:00 00:01 00:01 00:02 00:02 00:03 00:03 00:04 00:04 00:05 00:05
+  [Line 0 complete: 12 pixels]
+Line 1 (frame_start=0):
+ 00:00>>> Sending input line 1
+ 00:00 00:01 00:01 00:02 00:02 00:03 00:03 00:04 00:04 00:05 00:05
+  [Line 1 complete: 12 pixels]
+Line 2 (frame_start=0):
+ 01:00 01:00 01:01 01:01 01:02 01:02 01:03 01:03 01:04 01:04 01:05 01:05
+  [Line 2 complete: 12 pixels]
+Line 3 (frame_start=0):
+ 01:00>>> Sending input line 2
+ 01:00 01:01 01:01 01:02 01:02 01:03 01:03 01:04 01:04 01:05 01:05
+  [Line 3 complete: 12 pixels]
+Line 4 (frame_start=0):
+ 02:00 02:00 02:01 02:01 02:02 02:02 02:03 02:03 02:04 02:04 02:05 02:05
+  [Line 4 complete: 12 pixels]
+Line 5 (frame_start=0):
+ 02:00>>> Sending input line 3
+ 02:00 02:01 02:01 02:02 02:02 02:03 02:03 02:04 02:04 02:05 02:05
+  [Line 5 complete: 12 pixels]
+Line 6 (frame_start=0):
+ 03:00 03:00 03:01 03:01 03:02 03:02 03:03 03:03 03:04 03:04 03:05 03:05
+  [Line 6 complete: 12 pixels]
+Line 7 (frame_start=0):
+ 03:00 03:00 03:01 03:01 03:02 03:02 03:03 03:03 03:04 03:04 03:05 03:05
+
+========================================
+Test Complete
+========================================
+Input:  6 x 4 = 24 pixels
+Output: 96 pixels received
+Expected (2x H + V): 12 x 8 = 96 pixels
+Output lines detected: 8 (expected 8)
+>>> PASS: Correct pixel count!
+>>> PASS: Correct line count!
+========================================
+
+$finish called at time : 2965 ns : File "C:/Users/Mikkel/Scaler2x/Scaler2x.srcs/sim_1/new/tb_scaler_2x.v" Line 186

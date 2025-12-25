@@ -3,13 +3,13 @@
 // Company: 
 // Engineer: 
 // 
-// Create Date: 23.12.2025 16:08:17
+// Create Date: 25.12.2025 21:36:49
 // Design Name: 
-// Module Name: tb_scaler_2x_continuous
-// Project Name: scaler2x
+// Module Name: tb_Scaler2x_frame
+// Project Name: 
 // Target Devices: 
 // Tool Versions: 
-// Description: Testbench for 2x video upscaler
+// Description: 
 // 
 // Dependencies: 
 // 
@@ -19,8 +19,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
-module tb_Scaler2x_continuous;
+module tb_Scaler2x_frame;
     // Parameters
     localparam PIXEL_WIDTH = 24;
     localparam MAX_WIDTH   = 1024;
@@ -63,7 +62,7 @@ module tb_Scaler2x_continuous;
     ) dut (
         .clk               (clk),
         .rst_n             (rst_n),
-        .VPU_use_stream_mode(1'b1),        // 0 = use stream scaler
+        .VPU_use_stream_mode(1'b1),
         .VPU_cfg_width     (VPU_cfg_width),
         .VPU_cfg_height    (VPU_cfg_height),
         .VPU_in_valid      (VPU_in_valid),
@@ -88,7 +87,7 @@ module tb_Scaler2x_continuous;
 
     integer x, y;
 
-    // Task: drive one 6-pixel line
+    // Task: drive one input line
     task drive_line(input integer row);
     begin
         for (x = 0; x < IN_W; x = x + 1) begin
@@ -97,7 +96,6 @@ module tb_Scaler2x_continuous;
             VPU_in_line_start  <= (x == 0);
             VPU_in_frame_start <= (row == 0 && x == 0);
             
-            // Wait for the handshake to complete (clock edge where both valid and ready are high)
             @(posedge clk);
             while (!VPU_in_ready) @(posedge clk);
         end
@@ -110,18 +108,43 @@ module tb_Scaler2x_continuous;
     end
     endtask
 
-    // Monitor output
+    // Monitor output with better formatting
     integer out_count;
+    integer out_line_count;
+    integer pixels_this_line;
+    
     initial begin
         out_count = 0;
-        $display("Time  | out_valid out_line_start out_frame_start  out_pixel");
+        out_line_count = 0;
+        pixels_this_line = 0;
+        
+        $display("========================================");
+        $display("2x Scaler Testbench - Horizontal + Vertical");
+        $display("========================================");
+        
         forever begin
             @(posedge clk);
-            if (VPU_out_valid) begin
-                $display("%5t |    %b         %b              %b        0x%06h",
-                         $time, VPU_out_valid, VPU_out_line_start,
-                         VPU_out_frame_start, VPU_out_pixel);
+            if (VPU_out_valid && VPU_out_ready) begin
+                // Track line starts
+                if (VPU_out_line_start) begin
+                    if (out_line_count > 0) begin
+                        $display("  [Line %0d complete: %0d pixels]", out_line_count - 1, pixels_this_line);
+                    end
+                    $display("Line %0d (frame_start=%b):", out_line_count, VPU_out_frame_start);
+                    pixels_this_line = 0;
+                    out_line_count = out_line_count + 1;
+                end
+                
+                // Display pixel (compact format)
+                $write(" %02h:%02h", VPU_out_pixel[23:16], VPU_out_pixel[15:8]);
+                
+                pixels_this_line = pixels_this_line + 1;
                 out_count = out_count + 1;
+                
+                // Line break every 12 pixels for readability
+                if (pixels_this_line % 12 == 0) begin
+                    $display("");
+                end
             end
         end
     end
@@ -142,21 +165,40 @@ module tb_Scaler2x_continuous;
         rst_n = 1;
         repeat (5) @(posedge clk);
 
-        $display("=== Driving 6x4 test frame into Scaler2x (stream mode) ===");
+        $display("\n=== Driving %0dx%0d test frame into Scaler2x ===\n", IN_W, IN_H);
 
-        // Drive 4 lines
+        // Drive all input lines
         for (y = 0; y < IN_H; y = y + 1) begin
-            //$display("--- Driving line %0d ---", y);
+            $display(">>> Sending input line %0d", y);
             drive_line(y);
             repeat (2) @(posedge clk);
         end
 
-        // Allow some time for remaining outputs
-        repeat (50) @(posedge clk);
+        // Wait for all outputs (vertical scaling means more output)
+        repeat (200) @(posedge clk);
 
-        $display("Total output pixels seen (valid): %0d", out_count);
-        $display("Expected with 2x horizontal (only): %0d", IN_W * 2 * IN_H);
-        $display("NOTE: Current Scaler2x_stream only doubles horizontally; vertical 2x to 8 lines is a later step.");
+        // Final report
+        $display("\n========================================");
+        $display("Test Complete");
+        $display("========================================");
+        $display("Input:  %0d x %0d = %0d pixels", IN_W, IN_H, IN_W * IN_H);
+        $display("Output: %0d pixels received", out_count);
+        $display("Expected (2x H + V): %0d x %0d = %0d pixels", IN_W * 2, IN_H * 2, IN_W * 2 * IN_H * 2);
+        $display("Output lines detected: %0d (expected %0d)", out_line_count, IN_H * 2);
+        
+        if (out_count == (IN_W * 2 * IN_H * 2)) begin
+            $display(">>> PASS: Correct pixel count!");
+        end else begin
+            $display(">>> FAIL: Pixel count mismatch!");
+        end
+        
+        if (out_line_count == IN_H * 2) begin
+            $display(">>> PASS: Correct line count!");
+        end else begin
+            $display(">>> FAIL: Line count mismatch!");
+        end
+        
+        $display("========================================\n");
         $finish;
     end
 

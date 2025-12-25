@@ -9,9 +9,9 @@ Completed static elaboration
 Starting simulation data flow analysis
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
-Compiling module xil_defaultlib.Scaler2x_stream
+Compiling module xil_defaultlib.Scaler2x_stream(MAX_WIDTH=1024)
 Compiling module xil_defaultlib.Scaler2x_frame
-Compiling module xil_defaultlib.Scaler2x
+Compiling module xil_defaultlib.Scaler2x(MAX_WIDTH=1024,MAX_HEIG...
 Compiling module xil_defaultlib.tb_Scaler2x
 Compiling module xil_defaultlib.glbl
 Built simulation snapshot tb_Scaler2x_behav
