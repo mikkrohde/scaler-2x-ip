@@ -24,7 +24,7 @@ module Scaler2x #(
         input wire  rst_n,
 
         // Mode select: 1 = stream mode (line-based), 0 = frame mode (future feature)
-        input wire                  VPU_use_stream_mode,
+        input wire                  VPU_cfg_use_stream_mode,
 
         // Config (for future frame mode)
         input wire [15:0]           VPU_cfg_width,
