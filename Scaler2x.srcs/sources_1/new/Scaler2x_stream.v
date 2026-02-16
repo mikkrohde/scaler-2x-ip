@@ -35,8 +35,14 @@ module Scaler2x_stream #(
 );
     
     //Vertical buffer variables:
+    (* ram_style = "block" *)
     reg [PIXEL_WIDTH-1:0]       line_ram [0:MAX_WIDTH-1];
-    reg [$clog2(MAX_WIDTH)-1:0] line_addr;
+    
+    reg [$clog2(MAX_WIDTH)-1:0] ram_wr_addr;
+    reg [PIXEL_WIDTH-1:0]       ram_wr_data;
+    reg                         ram_wr_en;
+    reg [$clog2(MAX_WIDTH)-1:0] ram_rd_addr;
+    reg [PIXEL_WIDTH-1:0]       ram_rd_data;
     
     // Horizontal repeat flag: 0 = first copy, 1 = second copy of same input pixel
     // Vertical repeat flag: 0 = first output line for this input line, 1 = second output line for this input line
@@ -57,6 +63,17 @@ module Scaler2x_stream #(
     wire handshake_in  = VPU_in_valid && VPU_in_ready;
     wire handshake_out = VPU_out_valid && VPU_out_ready;
     
+    always @(posedge clk) begin
+        // Synchronous write
+        if (ram_wr_en) begin
+            line_ram[ram_wr_addr] <= ram_wr_data;
+        end
+        
+        // Synchronous read (data available NEXT cycle)
+        ram_rd_data <= line_ram[ram_rd_addr];
+    end
+    
+    
     // State transition logic (combinational)
     always @(*) begin
         next_state = state;
@@ -64,15 +81,16 @@ module Scaler2x_stream #(
             IDLE: begin
                 if (VPU_in_valid && VPU_in_frame_start)
                     next_state = FIRST_VPASS;
+                    
             end
             
             FIRST_VPASS: begin
-                if (line_addr >= cfg_width)
+                if (ram_wr_addr >= cfg_width)
                     next_state = SECOND_VPASS;
             end
             
             SECOND_VPASS: begin
-                if (line_addr >= cfg_width)
+                if (ram_wr_addr >= cfg_width)
                     next_state = FIRST_VPASS;
             end
         endcase
@@ -91,12 +109,15 @@ module Scaler2x_stream #(
             latched_pixel           <= {PIXEL_WIDTH{1'b0}};
             latched_line_start      <= 1'b0;
             latched_frame_start     <= 1'b0;
-            line_addr               <= 0;
+            ram_wr_en               <= 1'b0;
+            ram_wr_addr             <= 0;
         end else begin
             state <= next_state;
 
             if (state != next_state) begin
-                line_addr <= 0;
+                ram_wr_addr <= 0;
+                ram_wr_en <= 1'b0;
+                
                 horizontal_repitition <= 1'b0;
             end else begin
                 case (state)
@@ -122,12 +143,14 @@ module Scaler2x_stream #(
                                 VPU_out_pixel           <= VPU_in_pixel;
                                 VPU_out_line_start      <= VPU_in_line_start;
                                 VPU_out_frame_start     <= VPU_in_frame_start;
-
-                                line_ram[line_addr]     <= VPU_in_pixel;
-                                line_addr               <= line_addr + 1;
+                                
+                                ram_wr_en               <= 1'b1;
+                                ram_wr_data             <= VPU_in_pixel;
+                                ram_wr_addr             <= ram_wr_addr + 1;
                                 
                                 horizontal_repitition   <= 1'b1;
                             end else begin
+                                ram_wr_en               <= 1'b0;
                                 VPU_out_valid <= 1'b0; // No input available
                             end
                         end
@@ -144,13 +167,13 @@ module Scaler2x_stream #(
                                 
                             end else begin
                                 VPU_out_valid           <= 1'b1;
-                                VPU_out_pixel           <= line_ram[line_addr];
-                                latched_pixel           <= line_ram[line_addr];
-                                VPU_out_line_start      <= (line_addr == 0);
+                                VPU_out_pixel           <= ram_rd_data;
+                                latched_pixel           <= ram_rd_data;
+                                VPU_out_line_start      <= (ram_wr_addr == 0);
                                 VPU_out_frame_start     <= 1'b0;
                                 
                                 horizontal_repitition   <= 1'b1;
-                                line_addr               <= line_addr + 1;
+                                ram_wr_addr             <= ram_wr_addr + 1;
                             end
                         end else begin
                             VPU_out_valid <= 1'b0;  // Deassert when line complete

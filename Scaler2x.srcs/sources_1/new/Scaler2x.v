@@ -14,8 +14,8 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 module Scaler2x #(
-        parameter MAX_WIDTH   = 1920,
-        parameter MAX_HEIGHT  = 1080,
+        parameter MAX_WIDTH   = 1280,
+        parameter MAX_HEIGHT  = 960,
         parameter PIXEL_WIDTH = 24,
         parameter ENABLE_STREAM_SCALING = 1,
         parameter ENABLE_FRAME_SCALING = 1
@@ -83,23 +83,23 @@ module Scaler2x #(
         wire f_rd_en;
         wire [$clog2(MAX_WIDTH*MAX_HEIGHT)-1:0] f_rd_addr;
 
-        Scaler2x_frame #(
-            .MAX_WIDTH  (MAX_WIDTH),
-            .MAX_HEIGHT (MAX_HEIGHT),
-            .PIXEL_WIDTH(PIXEL_WIDTH)
-        ) u_scaler_frame (
-            .clk               (clk),
-            .rst_n             (rst_n),
-            .cfg_width         (VPU_cfg_width),
-            .cfg_height        (VPU_cfg_height),
-            .VPU_rd_en         (f_rd_en),
-            .VPU_rd_addr       (f_rd_addr),
-            .VPU_rd_data       (VPU_rd_data),
-            .VPU_out_valid     (f_out_valid),
-            .VPU_out_pixel     (f_out_pixel),
-            .VPU_out_line_start(f_out_line_start),
-            .VPU_out_frame_start(f_out_frame_start)
-        );
+        //Scaler2x_frame #(
+        //    .MAX_WIDTH  (MAX_WIDTH),
+        //    .MAX_HEIGHT (MAX_HEIGHT),
+        //    .PIXEL_WIDTH(PIXEL_WIDTH)
+        //) u_scaler_frame (
+        //    .clk               (clk),
+        //    .rst_n             (rst_n),
+        //    .cfg_width         (VPU_cfg_width),
+        //    .cfg_height        (VPU_cfg_height),
+        //    .VPU_rd_en         (f_rd_en),
+        //    .VPU_rd_addr       (f_rd_addr),
+        //    .VPU_rd_data       (VPU_rd_data),
+        //    .VPU_out_valid     (f_out_valid),
+        //    .VPU_out_pixel     (f_out_pixel),
+        //    .VPU_out_line_start(f_out_line_start),
+        //    .VPU_out_frame_start(f_out_frame_start)
+        //);
 
         // Mode selection: for now only stream mode is really active;
         // frame mode outputs are all zeros from the placeholder.
